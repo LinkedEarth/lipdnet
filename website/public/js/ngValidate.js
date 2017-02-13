@@ -26,7 +26,7 @@ var _typeof = typeof Symbol === "function" && _typeof2(Symbol.iterator) === "sym
 // 3. Close zip file and download
 // 4. Reset zip file to null
 
-var f = angular.module('ngForm', ['uiGmapgoogle-maps', 'json-tree', 'ngFileUpload', "ngMaterial", "ngTable", "cgBusy", "vcRecaptcha"]);
+var f = angular.module('ngValidate', ['uiGmapgoogle-maps', 'json-tree', 'ngFileUpload', "ngMaterial", "ngTable", "cgBusy", "vcRecaptcha"]);
 
 // Google Maps API key to allow us to embed the map
 f.config(function (uiGmapGoogleMapApiProvider) {
@@ -211,8 +211,8 @@ f.factory("ExportService", ["$q", function ($q) {
 }]);
 
 
-// Controller - Upload Form
-f.controller('FormCtrl', ['$scope', '$log', '$timeout', '$q', '$http', 'Upload', "ImportService", "ExportService", "$mdDialog", "NgTableParams", function ($scope, $log, $timeout, $q, $http, Upload, ImportService, ExportService, $mdDialog, NgTableParams) {
+// Controller - Validate Form
+f.controller('ValidateCtrl', ['$scope', '$log', '$timeout', '$q', '$http', 'Upload', "ImportService", "ExportService", "$mdDialog", "NgTableParams", function ($scope, $log, $timeout, $q, $http, Upload, ImportService, ExportService, $mdDialog, NgTableParams) {
 
   $scope._myPromiseImport = "";
   $scope._myPromiseExport = "";

@@ -5,12 +5,12 @@ block css
 	// files below are page specific
 	link(rel="stylesheet" href="css/angular-busy.css")
 	link(rel="stylesheet" href="https://unpkg.com/ng-table@2.0.2/bundles/ng-table.min.css")
-	link(rel='stylesheet' href='css/upload.css')
+	link(rel='stylesheet' href='css/validate.css')
 	link(rel="stylesheet" href="css/json-tree.css")
 
 
 block body
-	body(ng-app='uploadApp' ng-cloak)
+	body(ng-app='validateApp' ng-cloak)
 		#wrapper
 			include ./include/navbar.jade
 			md-toolbar
@@ -18,7 +18,7 @@ block body
 					.md-title Upload
 				
 			.col-sm-12
-				#form-container(ng-controller='FormCtrl as vm')
+				#form-container(ng-controller='ValidateCtrl as vm')
 					form#upload-form(ng-submit='')
 						// GOOGLE MAP
 						// ng-if="userData.geo.geometry.coordinates"
@@ -122,8 +122,8 @@ block body
 // block js will insert js scripts listed in footer.jade that are needed on every page.
 block js
 	// files below are page specific
-	script(src='apps/uploadApp.js')
-	script(src='js/ngForm.js')
+	script(src='apps/validateApp.js')
+	script(src='js/ngValidate.js')
 	script(src="lib/angular-busy.js")
 	script(src='lib/json-tree.js')
 	script(src="lib/zip/zip.js")

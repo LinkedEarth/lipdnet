@@ -123,6 +123,11 @@ router.get('/validator', function(req, res, next){
   res.render('validator', {title: 'Validator'});
 });
 
+// Get the upload page
+router.get('/create', function(req, res, next){
+  res.render('create', {title: 'Create LiPD'});
+});
+
 router.post("/files", function(req, res, next){
   console.log("POST: /files");
 
