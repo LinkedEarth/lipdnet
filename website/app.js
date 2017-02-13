@@ -1,31 +1,58 @@
 // app.js
 var express = require('express');
-var path = require('path');
+var fs = require("fs");
+var path = require("path");
+var process = require("process");
+var winston = require('winston');
+var logger = new (winston.Logger)({
+   transports: [
+     new winston.transports.File({
+     filename: 'all-logs.log',
+     humanReadableUnhandledException: true,
+     handleExceptions: true,
+     json: false,
+     colorize: true
+    })
+   ],
+   exceptionHandlers: [
+     new winston.transports.File({
+       filename: 'exceptions.log',
+       humanReadableUnhandledException: true,
+       handleExceptions: true,
+       json: false,
+       colorize: true
+     })
+   ]
+ });
+logger.level = 'debug';
+logger.log("debug", new Error().stack);
+
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-var logger = require('morgan');
+// var logger = require('morgan');
+var multer = require("multer");
 var sys = require('sys');
-var multer = require('multer');
 var favicon = require('serve-favicon');
-var mongo = require('mongodb');
-var db = require('monk')('localhost:27017/docs');
 var routes = require('./routes/index');
 var users = require('./routes/users');
 //var port = process.env.PORT || 8080;
+
 var app = express();
-// console.log(__dirname + '/public/scripts/test.py');
+
+console.log("app: cwd: " + process.cwd());
+console.log("app: __dirname: " + __dirname);
 
 
 // Multer functions to save uploaded files
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, './tmp/')
+    cb(null, './tmp');
   },
   onFileUploadStart: function (file) {
     console.log(file.originalname + ' is starting ...');
   },
   onFileUploadComplete: function (file) {
-    console.log(file.fieldname + ' uploaded to  ' + file.path)
+    console.log(file.fieldname + ' uploaded to  ' + file.path);
   }
 });
 
@@ -33,21 +60,20 @@ var storage = multer.diskStorage({
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 app.use(favicon(__dirname + '/public/favicon.ico'));
-app.use(logger('dev'));
+// app.use(logger('dev'));
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-// app.use(express.bodyParser( { keepExtensions: true, uploadDir: __dirname + '/photos' } ));
 app.use(express.static(path.join(__dirname, 'public')));
 // app.use(express.static(path.join(__dirname, 'bower_components')));
-app.use(express.static(path.join(__dirname, 'tmp')));
+app.use(express.static(path.join(__dirname, 'routes', 'files')));
 app.use(multer({ storage: storage }).single('file'));
 
 // Give DB access to our routes
-app.use(function(req, res, next){
-	req.db = db;
-	next();
-});
+// app.use(function(req, res, next){
+// 	req.db = db;
+// 	next();
+// });
 
 // Attach the router to our app.
 app.use('/', routes);

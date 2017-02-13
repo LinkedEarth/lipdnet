@@ -1,16 +1,106 @@
 var express = require('express');
-var nodemailer = require('nodemailer');
-// var sys = require('sys');
+var fs = require("fs");
+var archiver = require('archiver');
+var gladstone = require('gladstone');
+var path = require("path");
+var process = require("process");
 var router = express.Router();
 
-// Nodemailer reusable transport object
-var transporter = nodemailer.createTransport({
-    service: 'Gmail',
-    auth: {
-        user: 'lipd.contact@gmail.com',
-        pass: 'aC9Un3Fudd2eJ0loU1wiT1'
+try{
+  // console.log("mode of __dirname");
+  // console.log(fs.statSync(__dirname).mode.toString(8));
+  // console.log("with unmask");
+  // console.log(("0o777" & ~process.umask()).toString(8));
+  console.log("index: cwd: " + process.cwd());
+  console.log("index: __dirname: " + __dirname);
+  // console.log("attempting to create a.txt");
+  // fs.writeFileSync("a.txt", "Hello World", {'flags': 'w+', "mode": "0o777"});
+  // console.log(fs.statSync('a.txt').mode.toString(8));
+} catch(e){
+  console.log(e);
+}
+
+
+// create a directory, but catch error when the dir already exists.
+var mkdirSync = function (path) {
+  try {
+    fs.mkdirSync(path);
+  } catch(e) {
+    if ( e.code != 'EEXIST' ){
+      console.log("folder exists: " + path);
     }
-});
+  }
+};
+
+// create a random string of numbers/letters for the TMP folder
+var makeid = function(prefix, cb){
+    var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for( var i=0; i < 6; i++ )
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    cb(prefix + text);
+    return prefix + text;
+};
+
+
+// use the archiver model to create the LiPD file
+var createArchive = function(pathTmpZip, pathTmpBag, filename, cb){
+  console.log("Creating ZIP/LiPD archive...");
+  var archive = archiver('zip');
+  // path where the LiPD will ultimately be located in "/zip" dir.
+  var pathTmpZipLipd = path.join(pathTmpZip, filename);
+  // open write stream to LiPD file location
+  var output = fs.createWriteStream(pathTmpZipLipd);
+  console.log("Write Stream Open: " + pathTmpZipLipd);
+
+  // "close" event. processing is finished.
+  output.on('close', function () {
+      console.log(archive.pointer() + ' total bytes');
+      // console.log('archiver has been finalized and the output file descriptor has closed.');
+      console.log("LiPD Created at: " + pathTmpZipLipd);
+      // callback to finish POST request
+      cb();
+  });
+
+  // error event
+  archive.on('error', function(err){
+      console.log("archive error");
+      throw err;
+  });
+
+  archive.pipe(output);
+  // Add the data directory to the archive
+  console.log("add dir to archive");
+  try{
+    // read in all filenames from the "/bag" dir
+    var files = fs.readdirSync(pathTmpBag);
+    for(var i in files) {
+      // current file to process
+      var currPath = path.join(pathTmpBag, files[i]);
+
+      // if this is a bagit file (.txt), use "archive.file"
+      if(path.extname(files[i]) === ".txt") {
+        console.log("archiving file from: " + currPath);
+        console.log("archiving file to: " + files[i]);
+        archive.file(currPath, { name: files[i]});
+
+      }
+      // if this is the "/data" directory, use "archive.directory"
+      else {
+        console.log("archiving dir from: " + currPath);
+        console.log("archiving dir to: /" + files[i]);
+        archive.directory(currPath, "/" + files[i]);
+      }
+
+    }
+
+  }catch(err){
+    console.log(err);
+  }
+
+  // all files are done, finalize the archive
+  archive.finalize();
+}; // end createArchive
 
 // Get the home page
 router.get('/', function(req, res, next) {
@@ -21,21 +111,6 @@ router.get('/', function(req, res, next) {
 router.post('/', function(req, res, next){
   console.log(req.body);
 
-  // use req data from contact form to build email object
-  var mailOptions = {
-      from: req.body.name + ' <' + req.body.email + '>',
-      to: "LiPD Contact Form <" + req.body.email + '>',
-      subject: "Message from " + req.body.name,
-      text: "Organization:\n" + req.body.org + "\n\nSubject:\n" +
-      req.body.subject + "\n\nMessage:\n" + req.body.message
-  };
-  // send mail with transport object and defined mail options
-  transporter.sendMail(mailOptions, function(error, info){
-      if(error){
-          return console.log(error);
-      }
-      console.log('Message sent: ' + info.response);
-  });
 });
 
 // Get the schema page
@@ -44,58 +119,95 @@ router.get('/schema', function(req, res, next){
 });
 
 // Get the upload page
-router.get('/upload', function(req, res, next){
-  res.render('upload', {title: 'Upload'});
+router.get('/validator', function(req, res, next){
+  res.render('validator', {title: 'Validator'});
 });
 
+router.post("/files", function(req, res, next){
+  console.log("POST: /files");
 
+  // set data about the file
+  var files = req.body.file;
+  var filename = req.body.filename;
+  console.log("POST: build path names");
 
-// router.get('/upload/paths', function(req, res, next){
-//   var db = req.db;
-//   var collection = db.get('docs');
-//   collection.find({},{},function(e,docs){
-//     res.json(docs);
-//   });
-// });
+  // path that stores lipds
+  var pathTop = path.join(__dirname, "files");
+  var _pathTmpPrefix = path.join(pathTop, "lipd-");
+  // create tmp folder at "/files/<lipd-xxxxx>"
+  console.log("POST: creating tmp dir...");
+  var pathTmp = makeid(_pathTmpPrefix, function(_pathTmp){
+    console.log("POST: created tmp dir str: " + _pathTmp);
+    mkdirSync(_pathTmp);
+    return _pathTmp;
+  });
 
-// Upload a file from the upload page, and insert it into the database
-router.post('/upss', function(req, res, next){
-  var result;
-  console.log(req.file);
-  req.file.time = Date.now();
-  res.json(req.file);
+  console.log("POST: tmp path: " + pathTmp);
+
+  // tmp bagit level folder. will be removed before zipping.
+  var pathTmpBag = path.join(pathTmp, "bag");
+  var pathTmpZip = path.join(pathTmp, "zip");
+  var pathTmpFiles = path.join(pathTmp, "files");
+
+  console.log("POST: make other dirs...");
+  mkdirSync(pathTmpZip);
+  mkdirSync(pathTmpFiles);
+
+  console.log("POST: created dir: " + pathTmpZip);
+  console.log("POST: created dir: " + pathTmpFiles);
+
+  // use req data to write csv and jsonld files into "/files/<lipd-xxxxx>/files/"
+  console.log("POST: begin writing files");
+  files.forEach(function(file){
+    console.log("POST: writing: " + path.join(pathTmpFiles,  file.filename));
+    fs.writeFileSync(path.join(pathTmpFiles, file.filename), file.dat);
+  });
+
+  console.log("POST: Initiate Bagit...");
+  // Call bagit process on folder of files
+  gladstone.createBagDirectory({
+     bagName: pathTmpBag,
+     originDirectory: pathTmpFiles,
+     cryptoMethod: 'md5',
+     sourceOrganization: 'LiPD Project',
+     contactName: 'Chris Heiser',
+     contactEmail: 'lipd.contact@gmail.com',
+     externalDescription: 'Source: LiPD Online Validator'
+  }).then(function(resp){
+    // When a successful Bagit Promise returns, start creating the ZIP/LiPD archive
+    if(resp){
+      createArchive(pathTmpZip, pathTmpBag, filename, function(){
+        console.log("POST: response: " + path.basename(pathTmp));
+        res.send(path.basename(pathTmp));
+      });
+    }
+  });
+  console.log("POST complete");
 });
 
-// Upload a file from the upload page, and insert it into the database
-router.post('/updb', function(req, res, next){
-  var result;
-  var db = req.db;
-  var collection = db.get('docs');
-  console.log(req.file);
-  req.file.time = Date.now();
-  res.json(req.file);
-  collection.insert(req.file);
-});
-
-// Download a validated LiPD file, or a file chosen from browsing the DB, to users computer
-router.post("/dwn", function(req, res, next){
-  var result;
-  var db = req.db;
-  var collection = db.get('docs');
-  console.log(req.file);
-  req.file.time = Date.now();
-  res.json(req.file);
-  collection.insert(req.file);
-});
-
-// Get the browse page
-// This finds every document since there's no parameters
-router.get('/browse', function(req, res, next){
-  var db = req.db;
-  var collection = db.get('docs');
-  var push;
-  collection.find({},{},function(e,docs){push = docs;});
-  res.render('browse', {title: 'Browse', docs: push});
+router.get("/files/:tmp", function(req, res, next){
+  // Tmp string provided by client
+  console.log("GET: /files");
+  var tmpStr = req.params.tmp;
+  console.log("GET: tmpStr: " + tmpStr);
+  // Path to the zip dir that holds the LiPD file
+  var pathTmpZip = path.join(__dirname, "files", tmpStr, "zip");
+  console.log("GET: " + pathTmpZip);
+  // Read in all filenames from the dir
+  console.log("GET: read zip dir");
+  var files = fs.readdirSync(pathTmpZip);
+  // Loop over the files found
+  for(var i in files) {
+    // Get the first lipd file you find (there should only be one)
+     if(path.extname(files[i]) === ".lpd") {
+       // set headers and initiate download.
+       var pathLipd = path.join(pathTmpZip, files[i]);
+       res.setHeader('Content-disposition', 'attachment; filename=' + files[i]);
+       res.setHeader('Content-type', "application/zip");
+       console.log("sending response to client.");
+       res.download(pathLipd);
+     }
+  }
 });
 
 router.get("/modal", function(req, res, next){
@@ -113,23 +225,6 @@ router.get("/modalCsv", function(req, res, next){
 router.get("/modalTxt", function(req, res, next){
   res.render('modalTxt', {title: ''});
 });
-
-// TESTING TESTING TESTING TESTING TESTING
-router.get('/test', function(req, res, next){
-  res.render('test', {title: 'Test'});
-});
-
-router.post('/test', function(req, res, next){
-  console.log(req.file);
-  res.json(req.file);
-  res.end("END");
-});
-
-// Get the upload page
-// router.get('/upload-tree', function(req, res, next){
-//   res.render('upload-tree', {title: 'Upload JSON Tree'});
-// });
-// TESTING TESTING TESTING TESTING TESTING
 
 
 module.exports = router;
