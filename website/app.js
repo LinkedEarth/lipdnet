@@ -1,13 +1,16 @@
 // app.js
 var express = require('express');
-var fs = require("fs");
-var path = require("path");
 var process = require("process");
 var winston = require('winston');
+
+// chdir to the project folder base. Everything we want to do will be in relation to this location
+console.log("app.js: Changing process dir to project root: /lipd/nodejs/website");
+process.chdir(__dirname);
+
 var logger = new (winston.Logger)({
    transports: [
      new winston.transports.File({
-     filename: 'all-logs.log',
+     filename: './logs/all-logs.log',
      humanReadableUnhandledException: true,
      handleExceptions: true,
      json: false,
@@ -16,7 +19,7 @@ var logger = new (winston.Logger)({
    ],
    exceptionHandlers: [
      new winston.transports.File({
-       filename: 'exceptions.log',
+       filename: './logs/exceptions.log',
        humanReadableUnhandledException: true,
        handleExceptions: true,
        json: false,
@@ -27,9 +30,11 @@ var logger = new (winston.Logger)({
 logger.level = 'debug';
 logger.log("debug", new Error().stack);
 
+var fs = require("fs");
+var path = require("path");
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-// var logger = require('morgan');
+var logger = require('morgan');
 var multer = require("multer");
 var sys = require('sys');
 var favicon = require('serve-favicon');
@@ -38,10 +43,6 @@ var users = require('./routes/users');
 //var port = process.env.PORT || 8080;
 
 var app = express();
-
-console.log("app: cwd: " + process.cwd());
-console.log("app: __dirname: " + __dirname);
-
 
 // Multer functions to save uploaded files
 var storage = multer.diskStorage({
@@ -60,7 +61,7 @@ var storage = multer.diskStorage({
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 app.use(favicon(__dirname + '/public/favicon.ico'));
-// app.use(logger('dev'));
+app.use(logger('dev'));
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));

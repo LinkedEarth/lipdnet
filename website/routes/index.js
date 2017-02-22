@@ -6,28 +6,15 @@ var path = require("path");
 var process = require("process");
 var router = express.Router();
 
-try{
-  // console.log("mode of __dirname");
-  // console.log(fs.statSync(__dirname).mode.toString(8));
-  // console.log("with unmask");
-  // console.log(("0o777" & ~process.umask()).toString(8));
-  console.log("index: cwd: " + process.cwd());
-  console.log("index: __dirname: " + __dirname);
-  // console.log("attempting to create a.txt");
-  // fs.writeFileSync("a.txt", "Hello World", {'flags': 'w+', "mode": "0o777"});
-  // console.log(fs.statSync('a.txt').mode.toString(8));
-} catch(e){
-  console.log(e);
-}
-
-
 // create a directory, but catch error when the dir already exists.
 var mkdirSync = function (path) {
   try {
     fs.mkdirSync(path);
   } catch(e) {
-    if ( e.code != 'EEXIST' ){
+    if ( e.code == 'EEXIST' ){
       console.log("folder exists: " + path);
+    } else {
+      console.log(e);
     }
   }
 };
@@ -41,7 +28,6 @@ var makeid = function(prefix, cb){
     cb(prefix + text);
     return prefix + text;
 };
-
 
 // use the archiver model to create the LiPD file
 var createArchive = function(pathTmpZip, pathTmpBag, filename, cb){
@@ -123,11 +109,6 @@ router.get('/validator', function(req, res, next){
   res.render('validator', {title: 'Validator'});
 });
 
-// Get the upload page
-router.get('/create', function(req, res, next){
-  res.render('create', {title: 'Create LiPD'});
-});
-
 router.post("/files", function(req, res, next){
   console.log("POST: /files");
 
@@ -137,7 +118,7 @@ router.post("/files", function(req, res, next){
   console.log("POST: build path names");
 
   // path that stores lipds
-  var pathTop = path.join(__dirname, "files");
+  var pathTop = path.join(process.cwd(), "tmp");
   var _pathTmpPrefix = path.join(pathTop, "lipd-");
   // create tmp folder at "/files/<lipd-xxxxx>"
   console.log("POST: creating tmp dir...");
@@ -196,7 +177,7 @@ router.get("/files/:tmp", function(req, res, next){
   var tmpStr = req.params.tmp;
   console.log("GET: tmpStr: " + tmpStr);
   // Path to the zip dir that holds the LiPD file
-  var pathTmpZip = path.join(__dirname, "files", tmpStr, "zip");
+  var pathTmpZip = path.join(process.cwd(), "tmp", tmpStr, "zip");
   console.log("GET: " + pathTmpZip);
   // Read in all filenames from the dir
   console.log("GET: read zip dir");
