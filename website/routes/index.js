@@ -196,6 +196,10 @@ router.get("/files/:tmp", function(req, res, next){
   }
 });
 
+router.get("/create", function(req, res, next){
+  res.render('create', {title: 'Create & Edit LiPD'});
+});
+
 router.get("/modal", function(req, res, next){
   res.render('modal', {title: ''});
 });
