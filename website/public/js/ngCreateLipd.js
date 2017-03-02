@@ -25,32 +25,89 @@ f.controller('CreateCtrl',['$scope', 'Upload', '$timeout', '$q', '$http', functi
 
 
     // User data holds all the user selected or imported data
-    $scope.meta = {
-      "lipdVersion": 1.2,
-      "archiveType": "",
-      "dataSetName": "",
-      "funding": [],
-      "pub": [{}],
-      "geo": {"geometry":{"coordinates":[]}, "type": "Feature"},
-      "chronData": {"chronMeasurementTable": {}, "chronModel":{}},
-      "paleoData": {"paleoMeasurementTable": {}, "paleoModel":{}}
+    $scope.keys = {
+      "advKeys": ["@context", "tsid", "number", "google", "md5", "lipdversion", "investigators"],
+      "lowKeys": [],
+      "miscKeys": ["studyname", "proxy", "metadatamd5", "googlespreadsheetkey", "googlemetadataworksheet", "@context", "tagmd5", "datasetname", "description"],
+      "reqRootKeys": ["archiveType", "dataSetName", "paleoData", "geo"],
+      "reqPubKeys": ["authors", "title", "year", "journal"],
+      "reqTableKeys": ["number", "variableName", "TSid"],
+      "reqGeoKeys": ["coordinates"]
     };
-
-    $scope.metaErrors = {};
-    $scope.pageMeta = {"toggle": "", "valid": false, "filePicker": false};
+    $scope.feedback = {
+      "missingTsidCt": 0,
+      "wrnCt": 0,
+      "errCt": 0,
+      "tsidMsgs": [],
+      "posMsgs": [],
+      "errMsgs": [],
+      "wrnMsgs": [],
+      "dataCanDo": []
+    };
     $scope.geoMarkers = [];
-
+    $scope.files = {
+      "lipdFilename": "",
+      "dataSetName": "",
+      "fileCt": 0,
+      "bagit": {},
+      "csv": {},
+      "json": {
+        "lipdVersion": 1.2,
+        "archiveType": "",
+        "dataSetName": "",
+        "funding": [{ "agencyName": "", "grant": "" }],
+        "pub": [{ "identifier": [{ "type": "doi",
+            "id": "",
+            "url": "" }] }],
+        "geo": { "geometry": { "coordinates": [0, 0, 0] } },
+        "chronData": [{
+          "chronMeasurementTable": {},
+          "chronModel": [{
+            "method": {},
+            "ensembleTable": {},
+            "summaryTable": {},
+            "distributionTable": []
+          }]
+        }],
+        "paleoData": [{
+          "paleoMeasurementTable": {},
+          "paleoModel": [{
+            "method": {},
+            "ensembleTable": {},
+            "summaryTable": {},
+            "distributionTable": []
+          }]
+        }]
+      }
+    };
+    $scope.allFiles = [];
+    $scope.allFilenames = [];
+    $scope.downloadPromises = [];
+    $scope.pageMeta = {
+      "toggle": "",
+      "simpleView": true,
+      "valid": false,
+      "captcha": false
+    };
+    $scope.feedback = {
+      "missingTsidCt": 0,
+      "wrnCt": 0,
+      "errCt": 0,
+      "tsidMsgs": [],
+      "posMsgs": [],
+      "errMsgs": [],
+      "wrnMsgs": [],
+      "dataCanDo": []
+    };
     $scope.pubCt = 1;
     $scope.fundCt = 1;
     $scope.paleoCt = 1;
     $scope.chronCt = 1;
     $scope.paleoModelCt = 1;
     $scope.chronModelCt = 1;
-    $scope.errorCt = 0;
-    $scope.warningCt = 0;
 
     $scope.$watch("meta", function(){
-      document.getElementById("metaPretty").innerHTML = JSON.stringify($scope.meta, undefined, 2);
+      document.getElementById("metaPretty").innerHTML = JSON.stringify($scope.files.json, undefined, 2);
     }, true);
 
 
@@ -68,22 +125,26 @@ f.controller('CreateCtrl',['$scope', 'Upload', '$timeout', '$q', '$http', functi
         id: "1"
     }];
     $scope.colsPaleo = [{
-        "Number": "1",
-        "Variable Name": "",
-        "Description": "",
-        "Units": ""
+      "number": 1,
+      "variableName": "",
+      "description": "",
+      "units": "",
+      "values": ""
     }];
     $scope.colsChron = [{
-        "Number": "1",
-        "Variable Name": "",
-        "Description": "",
-        "Units": ""
+      "number": 1,
+      "variableName": "",
+      "description": "",
+      "units": "",
+      "values": ""
     }];
     $scope.pubType = ['Article'];
     $scope.funding = [{
         "id": "1",
-        "agency": "fundingAgency",
-        "fund": "fundingGrant"
+        "a": "fundingAgency",
+        "f": "fundingGrant",
+        "p": "fundingInvestigator",
+        "c": "fundingCountry"
     }];
     $scope.geo = {};
     $scope.geoType = ['Feature'];
@@ -113,20 +174,22 @@ f.controller('CreateCtrl',['$scope', 'Upload', '$timeout', '$q', '$http', functi
     $scope.addColumnPaleo = function() {
         var newID = $scope.colsPaleo.length + 1;
         $scope.colsPaleo.push({
-            "Number": newID,
-            "Variable Name": "",
-            "Description": "",
-            "Units": ""
+          "number": newID,
+          "variableName": "",
+          "description": "",
+          "units": "",
+          "values": ""
         });
     };
     // Add Chron column
     $scope.addColumnChron = function() {
         var newID = $scope.colsChron.length + 1;
         $scope.colsChron.push({
-            "Number": newID,
-            "Variable Name": "",
-            "Description": "",
-            "Units": ""
+            "number": newID,
+            "variableName": "",
+            "description": "",
+            "units": "",
+            "values": ""
         });
     };
 
@@ -144,7 +207,9 @@ f.controller('CreateCtrl',['$scope', 'Upload', '$timeout', '$q', '$http', functi
         $scope.funding.push({
             "id": newID,
             "a": "fundingAgency",
-            "f": "fundingGrant"
+            "f": "fundingGrant",
+            "p": "fundingInvestigtor",
+            "c": "fundingCountry"
         });
     };
 

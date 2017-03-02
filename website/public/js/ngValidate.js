@@ -214,9 +214,16 @@ f.factory("ExportService", ["$q", function ($q) {
 // Controller - Validate Form
 f.controller('ValidateCtrl', ['$scope', '$log', '$timeout', '$q', '$http', 'Upload', "ImportService", "ExportService", "$mdDialog", "NgTableParams", function ($scope, $log, $timeout, $q, $http, Upload, ImportService, ExportService, $mdDialog, NgTableParams) {
 
+  // doSomething.test1("PASS STRING1");
+  // doSomething.test2("PASS THE  STRING");
+  // console.log(doSomething.test);
+  // lipdValidation.test();
+
   $scope._myPromiseImport = "";
   $scope._myPromiseExport = "";
+  // something related to modal windows
   $scope.status = '  ';
+  // something related to modal windows
   $scope.customFullscreen = false;
 
   // TEST AREA FOR MODAL WINDOWS
@@ -372,6 +379,106 @@ f.controller('ValidateCtrl', ['$scope', '$log', '$timeout', '$q', '$http', 'Uplo
   $scope.geoMarkers = [];
 
   // MISC Functions
+
+  // Reset all metadata and data about the page.
+  $scope.resetPage = function(){
+    $scope.keys = {
+      "advKeys": ["@context", "tsid", "number", "google", "md5", "lipdversion", "investigators"],
+      "lowKeys": [],
+      "miscKeys": ["studyname", "proxy", "metadatamd5", "googlespreadsheetkey", "googlemetadataworksheet", "@context", "tagmd5", "datasetname", "description"],
+      "reqRootKeys": ["archiveType", "dataSetName", "paleoData", "geo"],
+      "reqPubKeys": ["authors", "title", "year", "journal"],
+      "reqTableKeys": ["number", "variableName", "TSid"],
+      "reqGeoKeys": ["coordinates"]
+    };
+    $scope.feedback = {
+      "missingTsidCt": 0,
+      "wrnCt": 0,
+      "errCt": 0,
+      "tsidMsgs": [],
+      "posMsgs": [],
+      "errMsgs": [],
+      "wrnMsgs": [],
+      "dataCanDo": []
+    };
+    $scope.geoMarkers = [];
+    $scope.files = {
+      "lipdFilename": "",
+      "dataSetName": "",
+      "fileCt": 0,
+      "bagit": {},
+      "csv": {},
+      "jsonSimple": {
+        "lipdVersion": 1.2,
+        "archiveType": "",
+        "dataSetName": "",
+        "funding": [{ "agencyName": "", "grant": "" }],
+        "pub": [{ "identifier": [{ "type": "doi",
+            "id": "",
+            "url": "" }] }],
+        "geo": { "geometry": { "coordinates": [0, 0, 0] } },
+        "chronData": [{
+          "chronMeasurementTable": {},
+          "chronModel": [{
+            "method": {},
+            "ensembleTable": {},
+            "summaryTable": {},
+            "distributionTable": []
+          }]
+        }],
+        "paleoData": [{
+          "paleoMeasurementTable": {},
+          "paleoModel": [{
+            "method": {},
+            "ensembleTable": {},
+            "summaryTable": {},
+            "distributionTable": []
+          }]
+        }]
+      },
+      "json": {
+        "lipdVersion": 1.2,
+        "archiveType": "",
+        "dataSetName": "",
+        "funding": [{ "agencyName": "", "grant": "" }],
+        "pub": [{ "identifier": [{ "type": "doi",
+            "id": "",
+            "url": "" }] }],
+        "geo": { "geometry": { "coordinates": [0, 0, 0] } },
+        "chronData": [{
+          "chronMeasurementTable": {},
+          "chronModel": [{
+            "method": {},
+            "ensembleTable": {},
+            "summaryTable": {},
+            "distributionTable": []
+          }]
+        }],
+        "paleoData": [{
+          "paleoMeasurementTable": {},
+          "paleoModel": [{
+            "method": {},
+            "ensembleTable": {},
+            "summaryTable": {},
+            "distributionTable": []
+          }]
+        }]
+      }
+    };
+    $scope.allFiles = [];
+    $scope.allFilenames = [];
+    $scope.downloadPromises = [];
+    $scope.pageMeta = {
+      "toggle": "",
+      "simpleView": true,
+      "valid": false,
+      "filePicker": false,
+      "dlFallback": false,
+      "dlFallbackMsg": "",
+      "captcha": false,
+    };
+  };
+
   $scope.startCaptcha = function(){
     $scope.pageMeta.captcha = true;
   };
@@ -1331,7 +1438,9 @@ f.controller('ValidateCtrl', ['$scope', '$log', '$timeout', '$q', '$http', 'Uplo
       // When a file is chosen for upload, trigger the change event
       fileInput.addEventListener('change', function () {
         // disable the file input after a file has been chosen.
-        fileInput.disabled = true;
+        fileInput.disabled = false;
+        // fileInput.disabled = true;
+
         // get a list of file entries inside this zip
         model.getEntries(fileInput.files[0], function (entries) {
           // use the service to parse data from the ZipJS entries

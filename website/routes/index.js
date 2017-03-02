@@ -4,6 +4,7 @@ var archiver = require('archiver');
 var gladstone = require('gladstone');
 var path = require("path");
 var process = require("process");
+var lipdValidator = require("../public/scripts/validator_int.js");
 var router = express.Router();
 
 // create a directory, but catch error when the dir already exists.
@@ -214,6 +215,24 @@ router.get("/modalCsv", function(req, res, next){
 
 router.get("/modalTxt", function(req, res, next){
   res.render('modalTxt', {title: ''});
+});
+
+// API
+router.get("/api/validator", function(req, res, next){
+  console.log("enter /api/validator");
+  // We are using this as a validation call for our desktop utilities.
+  // GET with some JSON, and we'll tell you if it pass/fail and what errors came up.
+
+  // receive some json data
+  var json_data = JSON.parse(req.body["json_payload"]);
+  lipdValidator.sortBeforeValidate(json_data, function(j){
+    lipdValidator.validate(j, function(x){
+      res.setHeader('Content-Type', 'application/json');
+      res.send(JSON.stringify(x, null, 3));
+      console.log("Response sent to origin");
+    });
+  });
+  console.log("exit /api/validator");
 });
 
 

@@ -40,18 +40,17 @@ block body
 										//- 		span#form-label Temp storage
 										//- 		select#creation-method-input
 										//- 			option(value="Blob") RAM
-										// File chooser: Select a lipd file
+										// File chooser: Select a lipd file 
 										li#buttons(style="list-style-type: none;")
 											//- span#form-label Load LiPD
 											// Bind this to a 'change' event so that we know when jsonld data is available to start processing.
-											input#file-input(ng-model="file.input" name='file' type="file" accept=".lpd" ng-disabled="pageMeta.filePicker" style="max-width:200px; width:175px; padding:4px; display:inline;")
-											
+											input#file-input(ng-model="file.input" name='file' type="file" accept=".lpd" style="max-width:200px; width:175px; padding:4px; display:inline;" ng-click="resetPage()")
+
 											// download button
 											//- md-button(ng-click="downloadZip()" ng-model='file' name='file' ngf-max-size="50MB") Download
 															
-	
-											button.valid-btn#generate-tsid(ng-model="feedback.missingTsidCt" ng-if="feedback.missingTsidCt > 0" ng-click="populateTSids1()") Populate TSid's
-
+											button.valid-btn#generate-tsid(ng-model="feedback.missingTsidCt" ng-disabled="feedback.missingTsidCt == 0" ng-click="populateTSids1()") Populate TSid's
+											//- button.valid-btn#generate-tsid(ng-model="feedback.missingTsidCt" ng-if="feedback.missingTsidCt > 0" ng-click="populateTSids1()") Populate TSid's
 											br 
 											// button to push validated lipd file to database
 											button.valid-btn(ng-model="file.push" ng-disabled="!pageMeta.valid") Upload to Wiki
@@ -130,6 +129,7 @@ block js
 	script(src="lib/zip/zip-ext.js")
 	script(src="lib/papaparse.min.js")
 	script(src="lib/FileSaver.min.js")
+	script(src="scripts/validator_ext.js")
 	script(src="https://cdnjs.cloudflare.com/ajax/libs/angular-recaptcha/3.2.1/angular-recaptcha.min.js")
 	script(src="https://www.google.com/recaptcha/api.js?onload=vcRecaptchaApiLoaded&render=explicit" async defer)
 	script(src='https://cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.15/angular-ui-router.min.js')
