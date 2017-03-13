@@ -1,4 +1,4 @@
-// INTERNAL
+// EXTERNAL
 // Everything in validate_ext and validate_int is the exact same code.
 // The only exception is the internal code has "module.exports = lipdValidation;" and external does not.
 // Internal = backend nodeJs
@@ -13,8 +13,8 @@ var lipdValidator = (function(){
     }),
 
     // Sort data by file type, filename, and gather other metdata
-    sortBeforeValidate: (function (objs, cb) {
-        console.log("enter sortBeforeValidate");
+    sortBeforeValidate: (function (objs) {
+        console.log("sortBeforeValidate");
         // Files: User data holds all the user selected or imported data
         var files = {
             "lipdFilename": "",
@@ -25,35 +25,27 @@ var lipdValidator = (function(){
             "json": {}
           };
         files.fileCt = objs.length;
-        console.log(objs.length);
-        try{
-          // loop over each csv/jsonld object. sort them into the scope by file type
-          objs.forEach(function (obj) {
-            console.log("processing: " + obj.filenameShort);
-            if (obj.type === "json") {
-              files.dataSetName = obj.filenameFull.split("/")[0];
-              files.lipdFilename = obj.filenameFull.split("/")[0] + ".lpd";
-              files.json = obj.data;
-            } else if (obj.type === "csv") {
-              files.csv[obj.filenameShort] = obj.data;
-            } else if (obj.type === "bagit") {
-              files.bagit[obj.filenameShort] = obj;
-            } else {
-              console.log("Not sure what to do with this file: " + obj.filenameFull);
-            }
-          });
-          cb(files);
-        }catch(e){
-          console.log("Error: sortBeforeValidate: " + e);
-        }
-
-        return;
+        // loop over each csv/jsonld object. sort them into the scope by file type
+        angular.forEach(objs, function (obj) {
+          if (obj.type === "json") {
+            files.dataSetName = obj.filenameFull.split("/")[0];
+            files.lipdFilename = obj.filenameFull.split("/")[0] + ".lpd";
+            files.json = obj.data;
+          } else if (obj.type === "csv") {
+            files.csv[obj.filenameShort] = obj.data;
+          } else if (obj.type === "bagit") {
+            files.bagit[obj.filenameShort] = obj;
+          } else {
+            console.log("Not sure what to do with this file: " + obj.filenameFull);
+          }
+        });
+        return(files);
     }),
     // end sortBeforeValidate
 
     // LiPD Validation: Check data for required fields, proper structure, and proper data types.
     // Attempt to fix invalid data, and return data with and feedback (errors and warnings)
-    validate: (function(files, cb){
+    validate: (function(files){
 
       console.log("In validate");
         // VALIDATOR EVENTS
@@ -76,20 +68,25 @@ var lipdValidator = (function(){
 
         // Feedback: Store all output messages; Errors, warnings, and other.
         var feedback = {
+          "validBagit": false,
           "missingTsidCt": 0,
           "wrnCt": 0,
           "errCt": 0,
           "tsidMsgs": [],
           "posMsgs": [],
           "errMsgs": [],
-          "wrnMsgs": []
+          "wrnMsgs": [],
+          "status": "NA"
         };
 
         // Keys: keys that are required for different sections
         var keys = {
           "advKeys": ["@context", "tsid", "number", "google", "md5", "lipdversion", "investigators"],
           "lowKeys": [],
-          "miscKeys": ["studyname", "proxy", "metadatamd5", "googlespreadsheetkey", "googlemetadataworksheet", "@context", "tagmd5", "datasetname", "description"],
+          "miscKeys": ["studyname", "proxy", "metadatamd5", "googlespreadsheetkey", "googlemetadataworksheet",
+                  "@context", "tagmd5", "datasetname", "description","wdcpaleourl", "maxyear",
+                  "minyear", "originaldataurl", "hasminvalue", "hasmaxvalue", "hasmedianvalue", "hasmeanvalue",
+                  "hasresolution", "datacontributor", "collectionname", "googledataurl"],
           "reqRootKeys": ["archiveType", "dataSetName", "paleoData", "geo"],
           "reqPubKeys": ["authors", "title", "year", "journal"],
           "reqTableKeys": ["number", "variableName", "TSid"],
@@ -231,7 +228,7 @@ var lipdValidator = (function(){
           verifyValid(feedback);
           var jsonCopy = JSON.parse(JSON.stringify(files.json));
           console.log("Finished Validate");
-          return {"dat": files.json, "feedback": feedback};
+          return {"dat": files.json, "feedback": feedback, "filename": files.lipdFilename, "status": feedback.status};
         };
 
         // Helper: Check that geo coordinates are within the proper latitude and longitude ranges.
@@ -646,6 +643,7 @@ var lipdValidator = (function(){
           // if all 4 bagit files are found, display valid bagit message
           if (count === 4) {
             logFeedback("pos", "Valid Bagit File", "bagit");
+            feedback.bagitValid = true;
           }
         };
         // END VERIFY BAGIT
@@ -658,26 +656,33 @@ var lipdValidator = (function(){
               // $scope.feedback.errCt++;
               // Count all TSid errors as a single error
               feedback.errCt++;
-              feedback.errMsgs.push("Missing data: TSid from " + feedback.missingTsidCt + " columns. \n- Use 'Populate TSids' button to generate and fill TSids");
+              feedback.errMsgs.push("Missing data: TSid from " + feedback.missingTsidCt + " columns");
+              feedback.status = "FAIL";
             }
             if (!valid) {
               if (feedback.errCt === 0) {
                 valid = true;
+                feedback.status = "PASS";
+              } else {
+                feedback.status = "FAIL";
               }
             }
           };
         // END VERIFY VALID
-
-        cb(validate());
+        try{
+          cb(validate());
+        } catch(err){
+          console.log("validate: err: " + err);
+        }
         return;
+        // return validate(files);
 
     }) // end validate
+
 
   }; // end return
 
 }());
-
-module.exports = lipdValidator;
 
 
   // DATA AFTER IMPORT SERVICE

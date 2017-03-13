@@ -4,7 +4,7 @@ var archiver = require('archiver');
 var gladstone = require('gladstone');
 var path = require("path");
 var process = require("process");
-var lipdValidator = require("../public/scripts/validator_int.js");
+var lipdValidator = require("../public/scripts/validator_node.js");
 var router = express.Router();
 
 // create a directory, but catch error when the dir already exists.
@@ -223,15 +223,30 @@ router.get("/api/validator", function(req, res, next){
   // We are using this as a validation call for our desktop utilities.
   // GET with some JSON, and we'll tell you if it pass/fail and what errors came up.
 
-  // receive some json data
-  var json_data = JSON.parse(req.body["json_payload"]);
-  lipdValidator.sortBeforeValidate(json_data, function(j){
-    lipdValidator.validate(j, function(x){
-      res.setHeader('Content-Type', 'application/json');
-      res.send(JSON.stringify(x, null, 3));
-      console.log("Response sent to origin");
+  try {
+    // receive some json data
+    console.log("Parsing JSON request");
+    var json_data = JSON.parse(req.body["json_payload"]);
+    console.log("Starting process...");
+    lipdValidator.sortBeforeValidate(json_data, function(j){
+      console.log("sortBeforeValidate callback: sending to validate");
+      lipdValidator.validate(j, function(x){
+        try {
+          console.log("Validate callback, preparing response");
+          res.setHeader('Content-Type', 'application/json');
+          res.send(JSON.stringify(x, null, 3));
+          console.log("Response sent to origin");
+        } catch(err) {
+          console.log("Error trying to prepare response. Ending request: " + err);
+          res.end();
+        }
+      });
     });
-  });
+  } catch(err) {
+    console.log("Error: overall process failed: " + err);
+    res.end();
+  }
+
   console.log("exit /api/validator");
 });
 

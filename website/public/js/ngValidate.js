@@ -491,7 +491,7 @@ f.controller('ValidateCtrl', ['$scope', '$log', '$timeout', '$q', '$http', 'Uplo
     }
   };
 
-  // Generate a TSid. An alphanumeric unique ID.
+  // Generate a TSid. An alphanumeric unique ID. Prefix + 8 chars.
   $scope.generateTSid = function(){
     var _tsid = "";
     function s4() {
@@ -1106,7 +1106,7 @@ f.controller('ValidateCtrl', ['$scope', '$log', '$timeout', '$q', '$http', 'Uplo
       // $scope.feedback.errCt++;
       // Count all TSid errors as a single error
       $scope.feedback.errCt++;
-      $scope.feedback.errMsgs.push("Missing data: TSid from " + $scope.feedback.missingTsidCt + " columns. \n- Use 'Populate TSids' button to generate and fill TSids");
+      $scope.feedback.errMsgs.push("Missing data: TSid from " + $scope.feedback.missingTsidCt + " columns.");
     }
     if (!$scope.pageMeta.valid) {
       if ($scope.feedback.errCt === 0) {
